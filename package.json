@@ -1,0 +1,26 @@
+{
+  "name": "fasttrack-pro",
+  "version": "1.0.0",
+  "description": "Sistema logistico con geolocalizacion",
+  "main": "gpsTracker.js",
+  "scripts": {
+    "start": "node gpsTracker.js",
+    "dev": "node gpsTracker.js", 
+    "build": "npm install",
+    "render-build": "npm install",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["logistics", "tracking", "gps"],
+  "author": "Andrew Josue de Leon Muralles",
+  "license": "MIT"
+}
+

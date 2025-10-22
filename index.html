@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>🌍FastTrack PRO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="overlay">
+    <header>
+      <h1>🌍 FastTrack PRO</h1>
+      <p>Simulación GPS y paneles diferenciados</p>
+    </header>
+    <div id="panel">
+      <label for="rol">Selecciona tu rol:</label>
+      <select id="rol">
+        <option>Selecciona...</option>
+        <option value="admin">Administrador</option>
+        <option value="user">Usuario</option>
+      </select>
+      <button onclick="redirigir()">Entrar</button>
+    </div>
+    <div id="map"></div>
+  </div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    var mapa = L.map('map').setView([14.6349, -90.5069], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+    // coords hay que meter más después
+    var ruta = [
+      { lat: 14.6349, lng: -90.5069 },
+      { lat: 14.6355, lng: -90.5075 },
+      { lat: 14.6360, lng: -90.5080 }
+    ];
+    var marcador = L.marker([ruta[0].lat, ruta[0].lng]).addTo(mapa);
+    var i = 1;
+    var intervalo = 2000;
+    setInterval(function() {
+      if (i < ruta.length) {
+        marcador.setLatLng([ruta[i].lat, ruta[i].lng]);
+        mapa.panTo([ruta[i].lat, ruta[i].lng]);
+        i = i + 1;
+      } else {
+        console.log("Fin de ruta...");
+      }
+    }, intervalo);
+    function redirigir() {
+      var rol = document.getElementById('rol').value;
+      if (rol === "Selecciona...") {
+        alert("Debes seleccionar un rol");
+        return;
+      }
+      localStorage.setItem('rol', rol);
+      window.location.href = rol + ".html";
+    }
+  </script>
+</body>
+</html>
