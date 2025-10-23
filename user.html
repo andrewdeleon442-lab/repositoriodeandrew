@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Usuario - FastTrack PRO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <script>
+    const rol = localStorage.getItem('rol');
+    if (rol !== 'user') window.location.href = 'index.html';
+  </script>
+  <header class="usuario">
+    <h1>Panel del Usuario</h1>
+    <p>Bienvenido al panel del usuario de FastTrack PRO</p>
+  </header>
+  <main>
+    <section>
+    <section>
+    <h2>🔎 Buscar paquete</h2>
+      <input type="text" id="codigoPaquete" placeholder="Código del paquete">
+      <button onclick="buscarPaquete()">Buscar</button>
+      <div id="resultadoPaquete"></div>
+      <div id="mapaPaquete" style="height: 300px; display: none;"></div>
+    </section>
+    <h2>Ruta asignada</h2>
+      <button onclick="verRuta()">Mostrar ruta</button>
+      <div id="ruta"></div>
+    </section>
+    <section>
+      <h2>Cerrar sesión</h2>
+      <button onclick="cerrarSesion()">Salir</button>
+    </section>
+  </main>
+  <script>
+    function verRuta() {
+      document.getElementById('ruta').innerText = 'Ruta simulada: Zona 3 → Zona 4';
+    }
+    function cerrarSesion() {
+      localStorage.removeItem('rol');
+      window.location.href = 'index.html';
+    }
+  </script>
+  <script src="packageTracker.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Administrador - FastTrack PRO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <script>
+    const rol = localStorage.getItem('rol');
+    if (rol !== 'admin') window.location.href = 'index.html';
+  </script>
+  <header class="admin">
+    <h1>Panel del Administrador</h1>
+    <p>Gestion de paquetes</p>
+  </header>
+  <main>
+    <section>
+      <h2>Añadir paquete</h2>
+      <form id="formAgregarPaquete" onsubmit="return agregarPaquete(event)">
+        <input type="text" id="nuevoCodigo" placeholder="Codigo del paquete" required>
+        <input type="number" id="nuevaLat" placeholder="Latitud" step="any" required>
+        <input type="number" id="nuevaLng" placeholder="Longitud" step="any" required>
+        <button type="submit">Añadir</button>
+      </form>
+      <div id="resultadoAgregar"></div>
+    </section>
+    <section>
+      <h2>Cerrar sesion</h2>
+      <button onclick="cerrarSesion()">Salir</button>
+    </section>
+  </main>
+  <script>
+    function validarCoordenadas(lat, lng) {
+      const latNum = parseFloat(lat);
+      const lngNum = parseFloat(lng);
+      if (isNaN(latNum) || isNaN(lngNum)) {
+        return { valido: false, error: 'Las coordenadas deben ser numeros validos' };
+      }
+      if (latNum < -90 || latNum > 90) {
+        return { valido: false, error: 'Latitud debe estar entre -90 y 90' };
+      }
+      if (lngNum < -180 || lngNum > 180) {
+        return { valido: false, error: 'Longitud debe estar entre -180 y 180' };
+      }
+      return { valido: true };
+    }
+
+    function agregarPaquete(event) {
+      event.preventDefault();
+      const codigo = document.getElementById('nuevoCodigo').value.trim();
+      const lat = document.getElementById('nuevaLat').value;
+      const lng = document.getElementById('nuevaLng').value;
+      const resultadoDiv = document.getElementById('resultadoAgregar');
+
+      if (!codigo) {
+        resultadoDiv.innerHTML = '<span style="color: red;">El codigo es obligatorio</span>';
+        return false;
+      }
+
+      const validacion = validarCoordenadas(lat, lng);
+      if (!validacion.valido) {
+        resultadoDiv.innerHTML = '<span style="color: red;">' + validacion.error + '</span>';
+        return false;
+      }
+
+      resultadoDiv.innerHTML = '<span style="color: blue;">Agregando paquete...</span>';
+
+      fetch('/paquete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          codigo: codigo, 
+          lat: parseFloat(lat), 
+          lng: parseFloat(lng)
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          resultadoDiv.innerHTML = '<span style="color: red;">' + data.error + '</span>';
+        } else {
+          resultadoDiv.innerHTML = '<span style="color: green;">' + data.mensaje + '</span>';
+          document.getElementById('formAgregarPaquete').reset();
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        resultadoDiv.innerHTML = '<span style="color: red;">Error de conexion con el servidor</span>';
+      });
+      
+      return false;
+    }
+
+    function cerrarSesion() {
+      localStorage.removeItem('rol');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
