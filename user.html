@@ -1,46 +1,524 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Usuario - FastTrack PRO</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Usuario - FastTrack PRO</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <script>
-    const rol = localStorage.getItem('rol');
-    if (rol !== 'user') window.location.href = 'index.html';
-  </script>
-  <header class="usuario">
-    <h1>Panel del Usuario</h1>
-    <p>Bienvenido al panel del usuario de FastTrack PRO</p>
-  </header>
-  <main>
-    <section>
-    <section>
-    <h2>🔎 Buscar paquete</h2>
-      <input type="text" id="codigoPaquete" placeholder="Código del paquete">
-      <button onclick="buscarPaquete()">Buscar</button>
-      <div id="resultadoPaquete"></div>
-      <div id="mapaPaquete" style="height: 300px; display: none;"></div>
-    </section>
-    <h2>Ruta asignada</h2>
-      <button onclick="verRuta()">Mostrar ruta</button>
-      <div id="ruta"></div>
-    </section>
-    <section>
-      <h2>Cerrar sesión</h2>
-      <button onclick="cerrarSesion()">Salir</button>
-    </section>
-  </main>
-  <script>
-    function verRuta() {
-      document.getElementById('ruta').innerText = 'Ruta simulada: Zona 3 → Zona 4';
-    }
-    function cerrarSesion() {
-      localStorage.removeItem('rol');
-      window.location.href = 'index.html';
-    }
-  </script>
-  <script src="packageTracker.js"></script>
+    <script>
+        const rol = localStorage.getItem('rol');
+        const ultimoAcceso = localStorage.getItem('ultimoAcceso');
+        
+        if (rol !== 'user') {
+            window.location.href = 'index.html';
+        }
+        
+        if (ultimoAcceso) {
+            const tiempoSesion = Date.now() - new Date(ultimoAcceso).getTime();
+            if (tiempoSesion > 8 * 60 * 60 * 1000) {
+                localStorage.removeItem('rol');
+                localStorage.removeItem('ultimoAcceso');
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+
+    <div class="app-container">
+        <header class="hero-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-user"></i>
+                    <h1>Panel de <span>Usuario</span></h1>
+                </div>
+                <p class="tagline">Seguimiento en tiempo real de tus paquetes</p>
+                
+                <div class="user-controls">
+                    <button onclick="actualizarDatos()" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                    <button onclick="cerrarSesion()" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="control-panel">
+                <div class="card">
+                    <h2><i class="fas fa-search"></i> Buscar Paquete</h2>
+                    <p class="mb-2">Ingresa el código de seguimiento de tu paquete</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Código de Seguimiento:</label>
+                        <div class="search-container">
+                            <input type="text" id="codigoPaquete" class="form-input" 
+                                   placeholder="Ej: PKG001, DOC2024..." 
+                                   onkeyup="mostrarSugerencias(this.value)">
+                            <button onclick="buscarPaquete()" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                        </div>
+                        <div id="sugerencias" class="sugerencias-container"></div>
+                    </div>
+
+                    <div class="ejemplos-container">
+                        <h4><i class="fas fa-lightbulb"></i> Códigos de ejemplo:</h4>
+                        <div class="ejemplos-grid">
+                            <span class="codigo-ejemplo" onclick="usarCodigoEjemplo('PKG001')">PKG001</span>
+                            <span class="codigo-ejemplo" onclick="usarCodigoEjemplo('PKG002')">PKG002</span>
+                            <span class="codigo-ejemplo" onclick="usarCodigoEjemplo('PKG003')">PKG003</span>
+                            <span class="codigo-ejemplo" onclick="usarCodigoEjemplo('PKG004')">PKG004</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-map-marker-alt"></i> Información del Paquete</h2>
+                    
+                    <div id="resultadoPaquete" class="resultado info">
+                        <div class="resultado-placeholder">
+                            <i class="fas fa-box-open"></i>
+                            <h3>Busca un paquete para comenzar</h3>
+                            <p>Ingresa un código de seguimiento para ver la ubicación en tiempo real</p>
+                        </div>
+                    </div>
+
+                    <div id="mapaPaquete" class="map-container" style="display: none;">
+                        <div id="mapaContainer" style="height: 400px;"></div>
+                    </div>
+
+                    <div id="historialContainer" class="historial-container" style="display: none;">
+                        <h3><i class="fas fa-history"></i> Historial de Movimientos</h3>
+                        <div id="historialMovimientos" class="historial-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-clock"></i>
+                    <h3>Tiempo Promedio</h3>
+                    <span id="tiempoPromedio">--</span>
+                    <small>Horas de entrega</small>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Entregas Exitosas</h3>
+                    <span id="entregasExitosas">--</span>
+                    <small>Este mes</small>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-truck"></i>
+                    <h3>En Tránsito</h3>
+                    <span id="paquetesTransito">--</span>
+                    <small>Paquetes activos</small>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        let mapaPaquete = null;
+        let marcadorActual = null;
+        let rutaPolyline = null;
+
+        function mostrarSugerencias(valor) {
+            const sugerencias = document.getElementById('sugerencias');
+            const codigosEjemplo = ['PKG001', 'PKG002', 'PKG003', 'PKG004', 'PKG005', 'DOC2024', 'ELEC789', 'ROPA456'];
+            
+            if (valor.length < 2) {
+                sugerencias.innerHTML = '';
+                sugerencias.style.display = 'none';
+                return;
+            }
+
+            const sugerenciasFiltradas = codigosEjemplo.filter(codigo => 
+                codigo.toLowerCase().includes(valor.toLowerCase())
+            );
+
+            if (sugerenciasFiltradas.length > 0) {
+                sugerencias.innerHTML = sugerenciasFiltradas.map(codigo => `
+                    <div class="sugerencia-item" onclick="seleccionarSugerencia('${codigo}')">
+                        <i class="fas fa-box"></i> ${codigo}
+                    </div>
+                `).join('');
+                sugerencias.style.display = 'block';
+            } else {
+                sugerencias.innerHTML = '';
+                sugerencias.style.display = 'none';
+            }
+        }
+
+        function seleccionarSugerencia(codigo) {
+            document.getElementById('codigoPaquete').value = codigo;
+            document.getElementById('sugerencias').style.display = 'none';
+            buscarPaquete();
+        }
+
+        function usarCodigoEjemplo(codigo) {
+            document.getElementById('codigoPaquete').value = codigo;
+            buscarPaquete();
+        }
+
+        async function buscarPaquete() {
+            const codigo = document.getElementById('codigoPaquete').value.trim();
+            const resultado = document.getElementById('resultadoPaquete');
+            const mapaDiv = document.getElementById('mapaPaquete');
+            const historialDiv = document.getElementById('historialContainer');
+
+            if (!codigo) {
+                mostrarNotificacion('Por favor ingresa un código de paquete', 'error');
+                return;
+            }
+
+            resultado.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Buscando paquete <strong>${codigo}</strong>...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/paquete/${codigo}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultado.innerHTML = `
+                        <div class="resultado error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Paquete no encontrado</h3>
+                            <p>El código <strong>${codigo}</strong> no existe en nuestro sistema.</p>
+                            <small>Verifica el código o intenta con otro.</small>
+                        </div>
+                    `;
+                    mapaDiv.style.display = 'none';
+                    historialDiv.style.display = 'none';
+                    return;
+                }
+
+                mostrarInformacionPaquete(data, codigo);
+                mostrarMapaPaquete(data, codigo);
+                
+                if (data.historial && data.historial.length > 0) {
+                    mostrarHistorialMovimientos(data.historial);
+                }
+
+                actualizarEstadisticasUsuario();
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultado.innerHTML = `
+                    <div class="resultado error">
+                        <i class="fas fa-wifi-slash"></i>
+                        <h3>Error de conexión</h3>
+                        <p>No se pudo conectar con el servidor.</p>
+                        <small>Verifica tu conexión a internet.</small>
+                    </div>
+                `;
+                mapaDiv.style.display = 'none';
+                historialDiv.style.display = 'none';
+            }
+        }
+
+        function mostrarInformacionPaquete(data, codigo) {
+            const resultado = document.getElementById('resultadoPaquete');
+            const estadoInfo = obtenerInfoEstado(data.estado);
+            
+            resultado.innerHTML = `
+                <div class="resultado success">
+                    <div class="paquete-header">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Paquete Encontrado</h3>
+                    </div>
+                    
+                    <div class="paquete-info-grid">
+                        <div class="info-item">
+                            <label><i class="fas fa-barcode"></i> Código:</label>
+                            <span class="codigo-destacado">${codigo}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <label><i class="fas fa-map-pin"></i> Ubicación:</label>
+                            <span>${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <label><i class="fas fa-truck"></i> Estado:</label>
+                            <span class="status-badge status-${data.estado}">
+                                ${estadoInfo.icono} ${estadoInfo.texto}
+                            </span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <label><i class="fas fa-file-alt"></i> Descripción:</label>
+                            <span>${data.descripcion || 'Sin descripción'}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <label><i class="fas fa-clock"></i> Última actualización:</label>
+                            <span>${data.ultima_actualizacion_local || 'No disponible'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function mostrarMapaPaquete(data, codigo) {
+            const mapaDiv = document.getElementById('mapaPaquete');
+            const mapaContainer = document.getElementById('mapaContainer');
+            
+            if (mapaPaquete) {
+                mapaPaquete.remove();
+            }
+            
+            mapaContainer.innerHTML = '';
+            mapaDiv.style.display = 'block';
+
+            mapaPaquete = L.map('mapaContainer').setView([data.lat, data.lng], 15);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(mapaPaquete);
+
+            const icono = obtenerIconoPorEstado(data.estado);
+            marcadorActual = L.marker([data.lat, data.lng], { icon: icono })
+                .addTo(mapaPaquete)
+                .bindPopup(`
+                    <div class="popup-content">
+                        <h4>${codigo}</h4>
+                        <p><strong>Estado:</strong> ${obtenerTextoEstado(data.estado)}</p>
+                        <p><strong>Descripción:</strong> ${data.descripcion || 'Sin descripción'}</p>
+                        <p><strong>Ubicación:</strong> ${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}</p>
+                    </div>
+                `)
+                .openPopup();
+
+            L.circle([data.lat, data.lng], {
+                color: '#2563eb',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.1,
+                radius: 100
+            }).addTo(mapaPaquete);
+        }
+
+        function mostrarHistorialMovimientos(historial) {
+            const historialDiv = document.getElementById('historialContainer');
+            const historialList = document.getElementById('historialMovimientos');
+            
+            historialList.innerHTML = historial.map((mov, index) => `
+                <div class="historial-item ${index === 0 ? 'ultimo-movimiento' : ''}">
+                    <div class="movimiento-marker">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="movimiento-info">
+                        <strong>${mov.lat.toFixed(6)}, ${mov.lng.toFixed(6)}</strong>
+                        <small>${new Date(mov.timestamp).toLocaleString()}</small>
+                    </div>
+                </div>
+            `).join('');
+            
+            historialDiv.style.display = 'block';
+        }
+
+        function obtenerInfoEstado(estado) {
+            const estados = {
+                'pendiente': { icono: '🟡', texto: 'Pendiente de recolección' },
+                'en_transito': { icono: '🟢', texto: 'En camino al destino' },
+                'entregado': { icono: '🔵', texto: 'Entregado exitosamente' }
+            };
+            return estados[estado] || { icono: '⚫', texto: estado };
+        }
+
+        function obtenerIconoPorEstado(estado) {
+            const iconUrl = {
+                'pendiente': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                'en_transito': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                'entregado': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png'
+            }[estado] || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png';
+
+            return L.icon({
+                iconUrl: iconUrl,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        function obtenerTextoEstado(estado) {
+            const estados = {
+                'pendiente': '🟡 Pendiente',
+                'en_transito': '🟢 En Tránsito',
+                'entregado': '🔵 Entregado'
+            };
+            return estados[estado] || estado;
+        }
+
+        async function actualizarEstadisticasUsuario() {
+            try {
+                const response = await fetch('/estadisticas');
+                const stats = await response.json();
+                
+                document.getElementById('tiempoPromedio').textContent = '24h';
+                document.getElementById('entregasExitosas').textContent = stats.entregados || '0';
+                document.getElementById('paquetesTransito').textContent = stats.en_transito || '0';
+            } catch (error) {
+                console.error('Error actualizando estadísticas:', error);
+            }
+        }
+
+        function actualizarDatos() {
+            const codigo = document.getElementById('codigoPaquete').value.trim();
+            if (codigo) {
+                buscarPaquete();
+            }
+            actualizarEstadisticasUsuario();
+            mostrarNotificacion('Datos actualizados', 'success');
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('rol');
+            localStorage.removeItem('ultimoAcceso');
+            window.location.href = 'index.html';
+        }
+
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${tipo}`;
+            notification.innerHTML = `
+                <i class="fas fa-${tipo === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                ${mensaje}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            actualizarEstadisticasUsuario();
+            const urlParams = new URLSearchParams(window.location.search);
+            const codigoUrl = urlParams.get('codigo');
+            if (codigoUrl) {
+                document.getElementById('codigoPaquete').value = codigoUrl;
+                buscarPaquete();
+            }
+        });
+    </script>
+
+    <style>
+        .user-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-container input {
+            flex: 1;
+        }
+
+        .sugerencias-container {
+            position: absolute;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            width: calc(100% - 2px);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .sugerencia-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.2s;
+        }
+
+        .sugerencia-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .ejemplos-container {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .ejemplos-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+
+        .codigo-ejemplo {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .codigo-ejemplo:hover {
+            background: #0369a1;
+            color: white;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+            z-index: 9999;
+        }
+
+        .notification.success {
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </body>
 </html>
