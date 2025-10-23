@@ -1,60 +1,432 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>🌍FastTrack PRO</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 FastTrack PRO - Sistema Logístico Inteligente</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="overlay">
-    <header>
-      <h1>🌍 FastTrack PRO</h1>
-      <p>Simulación GPS y paneles diferenciados</p>
-    </header>
-    <div id="panel">
-      <label for="rol">Selecciona tu rol:</label>
-      <select id="rol">
-        <option>Selecciona...</option>
-        <option value="admin">Administrador</option>
-        <option value="user">Usuario</option>
-      </select>
-      <button onclick="redirigir()">Entrar</button>
+    <div class="app-container">
+     
+        <header class="hero-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-shipping-fast"></i>
+                    <h1>FastTrack <span>PRO</span></h1>
+                </div>
+                <p class="tagline">Sistema Inteligente de Gestión Logística con Geolocalización en Tiempo Real</p>
+                <div class="stats-bar">
+                    <div class="stat">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="totalPaquetes">--</span>
+                        <small>Paquetes Activos</small>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-truck-moving"></i>
+                        <span id="enTransito">--</span>
+                        <small>En Tránsito</small>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="entregados">--</span>
+                        <small>Entregados</small>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+     
+        <main class="main-content">
+            <div class="control-panel">
+              
+                <div class="card">
+                    <h2><i class="fas fa-user-shield"></i> Acceso al Sistema</h2>
+                    <p class="mb-2">Selecciona tu rol para acceder al panel correspondiente</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Usuario:</label>
+                        <select id="rol" class="form-select">
+                            <option value="">Selecciona tu rol...</option>
+                            <option value="admin">
+                                <i class="fas fa-crown"></i> Administrador
+                            </option>
+                            <option value="user">
+                                <i class="fas fa-user"></i> Usuario Final
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="redirigir()" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Ingresar al Sistema
+                    </button>
+
+                    <div class="feature-list mt-2">
+                        <h3><i class="fas fa-star"></i> Características Principales</h3>
+                        <ul>
+                            <li><i class="fas fa-check"></i> Geolocalización en tiempo real</li>
+                            <li><i class="fas fa-check"></i> Múltiples paquetes simultáneos</li>
+                            <li><i class="fas fa-check"></i> Panel administrativo avanzado</li>
+                            <li><i class="fas fa-check"></i> Reportes y estadísticas</li>
+                            <li><i class="fas fa-check"></i> Interfaz 100% responsive</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><i class="fas fa-map-marked-alt"></i> Mapa de Seguimiento</h2>
+                    <p class="mb-2">Visualización en tiempo real de todos los paquetes activos</p>
+                    
+                    <div class="map-container">
+                        <div id="map"></div>
+                    </div>
+                    
+                    <div class="map-controls mt-1">
+                        <button onclick="simularMovimiento()" class="btn btn-secondary">
+                            <i class="fas fa-play"></i> Simular Movimiento
+                        </button>
+                        <button onclick="centrarMapa()" class="btn btn-primary">
+                            <i class="fas fa-crosshairs"></i> Centrar Mapa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 FastTrack PRO - Sistema Logístico Inteligente</p>
+                <div class="footer-links">
+                    <span><i class="fas fa-database"></i> SQLite</span>
+                    <span><i class="fas fa-map"></i> Leaflet.js</span>
+                    <span><i class="fas fa-server"></i> Node.js</span>
+                </div>
+            </div>
+        </footer>
     </div>
-    <div id="map"></div>
-  </div>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    var mapa = L.map('map').setView([14.6349, -90.5069], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-    // coords hay que meter más después
-    var ruta = [
-      { lat: 14.6349, lng: -90.5069 },
-      { lat: 14.6355, lng: -90.5075 },
-      { lat: 14.6360, lng: -90.5080 }
-    ];
-    var marcador = L.marker([ruta[0].lat, ruta[0].lng]).addTo(mapa);
-    var i = 1;
-    var intervalo = 2000;
-    setInterval(function() {
-      if (i < ruta.length) {
-        marcador.setLatLng([ruta[i].lat, ruta[i].lng]);
-        mapa.panTo([ruta[i].lat, ruta[i].lng]);
-        i = i + 1;
-      } else {
-        console.log("Fin de ruta...");
-      }
-    }, intervalo);
-    function redirigir() {
-      var rol = document.getElementById('rol').value;
-      if (rol === "Selecciona...") {
-        alert("Debes seleccionar un rol");
-        return;
-      }
-      localStorage.setItem('rol', rol);
-      window.location.href = rol + ".html";
-    }
-  </script>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+      
+        let mapa;
+        let marcadores = {};
+        let simulacionActiva = false;
+
+        function inicializarMapa() {
+            mapa = L.map('map').setView([14.6349, -90.5069], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(mapa);
+
+            cargarPaquetes();
+            cargarEstadisticas();
+        }
+
+        function cargarPaquetes() {
+            fetch('/paquetes')
+                .then(response => response.json())
+                .then(paquetes => {
+                  
+                    Object.values(marcadores).forEach(marker => mapa.removeLayer(marker));
+                    marcadores = {};
+
+                    paquetes.forEach(paquete => {
+                        const icono = obtenerIconoPorEstado(paquete.estado);
+                        const marker = L.marker([paquete.lat, paquete.lng], { icon: icono })
+                            .addTo(mapa)
+                            .bindPopup(`
+                                <div class="popup-content">
+                                    <h4>${paquete.codigo}</h4>
+                                    <p><strong>Estado:</strong> ${obtenerTextoEstado(paquete.estado)}</p>
+                                    <p><strong>Descripción:</strong> ${paquete.descripcion || 'Sin descripción'}</p>
+                                    <p><strong>Última actualización:</strong> ${paquete.ultima_actualizacion_local}</p>
+                                </div>
+                            `);
+
+                        marcadores[paquete.codigo] = marker;
+                    });
+
+                    actualizarEstadisticas(paquetes);
+                })
+                .catch(error => console.error('Error cargando paquetes:', error));
+        }
+
+        function cargarEstadisticas() {
+            fetch('/estadisticas')
+                .then(response => response.json())
+                .then(stats => {
+                    document.getElementById('totalPaquetes').textContent = stats.total || 0;
+                    document.getElementById('enTransito').textContent = stats.en_transito || 0;
+                    document.getElementById('entregados').textContent = stats.entregados || 0;
+                })
+                .catch(error => console.error('Error cargando estadísticas:', error));
+        }
+
+        function actualizarEstadisticas(paquetes) {
+            const total = paquetes.length;
+            const enTransito = paquetes.filter(p => p.estado === 'en_transito').length;
+            const entregados = paquetes.filter(p => p.estado === 'entregado').length;
+
+            document.getElementById('totalPaquetes').textContent = total;
+            document.getElementById('enTransito').textContent = enTransito;
+            document.getElementById('entregados').textContent = entregados;
+        }
+
+        function obtenerIconoPorEstado(estado) {
+            const iconUrl = {
+                'pendiente': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                'en_transito': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                'entregado': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png'
+            }[estado] || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png';
+
+            return L.icon({
+                iconUrl: iconUrl,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        function obtenerTextoEstado(estado) {
+            const estados = {
+                'pendiente': '🟡 Pendiente',
+                'en_transito': '🟢 En Tránsito',
+                'entregado': '🔵 Entregado'
+            };
+            return estados[estado] || estado;
+        }
+
+       
+        function simularMovimiento() {
+            if (simulacionActiva) return;
+            
+            simulacionActiva = true;
+            const paquetesEnTransito = Object.keys(marcadores).filter(codigo => 
+                !codigo.includes('PKG003') && !codigo.includes('PKG005')
+            );
+
+            paquetesEnTransito.forEach((codigo, index) => {
+                setTimeout(() => {
+                    const marker = marcadores[codigo];
+                    if (marker) {
+                        const latlng = marker.getLatLng();
+                        const newLat = latlng.lat + (Math.random() - 0.5) * 0.001;
+                        const newLng = latlng.lng + (Math.random() - 0.5) * 0.001;
+                        
+                        marker.setLatLng([newLat, newLng]);
+                        
+        
+                        fetch(`/paquete/${codigo}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ lat: newLat, lng: newLng, estado: 'en_transito' })
+                        }).then(() => cargarEstadisticas());
+                    }
+                }, index * 1000);
+            });
+
+            setTimeout(() => {
+                simulacionActiva = false;
+                cargarPaquetes(); 
+            }, paquetesEnTransito.length * 1000 + 1000);
+        }
+
+        function centrarMapa() {
+            mapa.setView([14.6349, -90.5069], 13);
+        }
+
+        function redirigir() {
+            const rol = document.getElementById('rol').value;
+            if (!rol) {
+                mostrarNotificacion('Por favor selecciona un rol', 'error');
+                return;
+            }
+
+            localStorage.setItem('rol', rol);
+            localStorage.setItem('ultimoAcceso', new Date().toISOString());
+            
+            mostrarNotificacion(`Accediendo como ${rol === 'admin' ? 'Administrador' : 'Usuario'}...`, 'success');
+            
+            setTimeout(() => {
+                window.location.href = rol + '.html';
+            }, 1000);
+        }
+
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${tipo}`;
+            notification.innerHTML = `
+                <i class="fas fa-${tipo === 'success' ? 'check' : 'exclamation'}-circle"></i>
+                ${mensaje}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            inicializarMapa();
+           
+            setInterval(() => {
+                cargarPaquetes();
+                cargarEstadisticas();
+            }, 30000);
+        });
+    </script>
+
+    <style>
+       
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .logo i {
+            font-size: 3rem;
+            color: var(--secondary);
+        }
+
+        .logo h1 span {
+            color: var(--secondary);
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .stat span {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .feature-list ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list i.fa-check {
+            color: var(--success);
+            margin-right: 0.5rem;
+        }
+
+        .map-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .popup-content {
+            min-width: 200px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-left: 4px solid var(--primary);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            border-left-color: var(--success);
+        }
+
+        .notification.error {
+            border-left-color: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .footer {
+            background: rgba(0,0,0,0.1);
+            color: white;
+            padding: 2rem 1rem;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-bar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+    </style>
 </body>
-</html>
+</html>  
