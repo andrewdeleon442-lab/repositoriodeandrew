@@ -1,8 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const mysql = require('mysql2');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -10,84 +11,70 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('.'));
 
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'fasttrack',
-  charset: 'utf8mb4',
-  reconnect: true,
-  acquireTimeout: 60000,
-  connectTimeout: 60000,
-  timeout: 60000
-};
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? '/tmp/fasttrack.db' 
+  : './fasttrack.db';
 
-let conexion;
+console.log('Ruta de la base de datos:', dbPath);
+
+let db;
 
 function inicializarBaseDatos() {
-  conexion = mysql.createConnection(dbConfig);
-  
-  conexion.connect(err => {
+  db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-      console.error('Error conectando a MySQL:', err.message);
-      console.log('Reintentando en 5 segundos...');
-      setTimeout(inicializarBaseDatos, 5000);
+      console.error('Error abriendo SQLite:', err.message);
       return;
     }
-    console.log('Conectado a la base de datos MySQL');
-    verificarTablas();
+    console.log('Conectado a SQLite en:', dbPath);
+    crearTablas();
   });
 
-  conexion.on('error', err => {
-    console.error('Error de MySQL:', err.message);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      console.log('Reconectando...');
-      inicializarBaseDatos();
-    }
+  db.on('error', (err) => {
+    console.error('Error de SQLite:', err.message);
   });
 }
 
-function verificarTablas() {
+function crearTablas() {
   const crearTablaSQL = `
     CREATE TABLE IF NOT EXISTS paquetes (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      codigo VARCHAR(50) UNIQUE NOT NULL,
-      lat DECIMAL(10,8) NOT NULL,
-      lng DECIMAL(11,8) NOT NULL,
-      estado ENUM('pendiente', 'en_transito', 'entregado') DEFAULT 'pendiente',
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo TEXT UNIQUE NOT NULL,
+      lat REAL NOT NULL,
+      lng REAL NOT NULL,
+      estado TEXT DEFAULT 'pendiente',
       descripcion TEXT,
-      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `;
   
-  conexion.query(crearTablaSQL, (err, results) => {
+  db.run(crearTablaSQL, (err) => {
     if (err) {
       console.error('Error creando tabla:', err.message);
     } else {
-      console.log('Tabla "paquetes" verificada/creada correctamente');
+      console.log('Tabla "paquetes" verificada');
       insertarDatosEjemplo();
     }
   });
 }
 
 function insertarDatosEjemplo() {
-  const datosEjemplo = [
+  const datos = [
     ['PKG001', 14.6349, -90.5069, 'en_transito', 'Documentos importantes'],
-    ['PKG002', 14.6355, -90.5075, 'pendiente', 'Paquete electronico'],
+    ['PKG002', 14.6355, -90.5075, 'pendiente', 'Paquete electrónico'],
     ['PKG003', 14.6360, -90.5080, 'entregado', 'Paquete de ropa']
   ];
-  
-  let insertsCompletados = 0;
-  
-  datosEjemplo.forEach(([codigo, lat, lng, estado, descripcion]) => {
-    const sql = 'INSERT IGNORE INTO paquetes (codigo, lat, lng, estado, descripcion) VALUES (?, ?, ?, ?, ?)';
-    conexion.query(sql, [codigo, lat, lng, estado, descripcion], (err) => {
-      if (err && err.code !== 'ER_DUP_ENTRY') {
-        console.error('Error insertando dato ejemplo:', err.message);
+
+  let inserts = 0;
+  datos.forEach(([codigo, lat, lng, estado, descripcion]) => {
+    const sql = `INSERT OR IGNORE INTO paquetes (codigo, lat, lng, estado, descripcion) 
+                 VALUES (?, ?, ?, ?, ?)`;
+    
+    db.run(sql, [codigo, lat, lng, estado, descripcion], function(err) {
+      if (err && err.code !== 'SQLITE_CONSTRAINT') {
+        console.error('Error insertando dato:', err.message);
       }
-      insertsCompletados++;
-      if (insertsCompletados === datosEjemplo.length) {
+      inserts++;
+      if (inserts === datos.length) {
         console.log('Datos de ejemplo verificados');
       }
     });
@@ -108,12 +95,13 @@ app.get('/user.html', (req, res) => {
 
 app.get('/paquetes', (req, res) => {
   const sql = 'SELECT * FROM paquetes ORDER BY timestamp DESC';
-  conexion.query(sql, (err, results) => {
+  
+  db.all(sql, [], (err, rows) => {
     if (err) {
       console.error('Error obteniendo paquetes:', err.message);
       return res.status(500).json({ error: 'Error del servidor' });
     }
-    res.json(results);
+    res.json(rows);
   });
 });
 
@@ -121,17 +109,17 @@ app.get('/paquete/:codigo', (req, res) => {
   const { codigo } = req.params;
   const sql = 'SELECT * FROM paquetes WHERE codigo = ?';
   
-  conexion.query(sql, [codigo], (err, results) => {
+  db.get(sql, [codigo], (err, row) => {
     if (err) {
       console.error('Error en consulta:', err.message);
       return res.status(500).json({ error: 'Error del servidor' });
     }
     
-    if (results.length === 0) {
+    if (!row) {
       return res.status(404).json({ error: 'Paquete no encontrado' });
     }
     
-    res.json(results[0]);
+    res.json(row);
   });
 });
 
@@ -139,15 +127,15 @@ app.post('/paquete', (req, res) => {
   const { codigo, lat, lng, descripcion } = req.body;
   
   if (!codigo || !lat || !lng) {
-    return res.status(400).json({ error: 'Codigo, latitud y longitud son obligatorios' });
+    return res.status(400).json({ error: 'Código, latitud y longitud son obligatorios' });
   }
 
   const sql = 'INSERT INTO paquetes (codigo, lat, lng, descripcion) VALUES (?, ?, ?, ?)';
   
-  conexion.query(sql, [codigo, lat, lng, descripcion || ''], (err, results) => {
+  db.run(sql, [codigo, lat, lng, descripcion || ''], function(err) {
     if (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(400).json({ error: 'El codigo ya existe' });
+      if (err.message.includes('UNIQUE constraint failed')) {
+        return res.status(400).json({ error: 'El código ya existe' });
       }
       console.error('Error insertando:', err.message);
       return res.status(500).json({ error: 'Error al guardar paquete' });
@@ -155,7 +143,7 @@ app.post('/paquete', (req, res) => {
     
     res.json({ 
       mensaje: 'Paquete agregado correctamente', 
-      id: results.insertId 
+      id: this.lastID 
     });
   });
 });
@@ -166,41 +154,26 @@ app.put('/paquete/:codigo', (req, res) => {
   
   const sql = 'UPDATE paquetes SET lat = ?, lng = ?, estado = ? WHERE codigo = ?';
   
-  conexion.query(sql, [lat, lng, estado || 'en_transito', codigo], (err, results) => {
+  db.run(sql, [lat, lng, estado || 'en_transito', codigo], function(err) {
     if (err) {
       console.error('Error actualizando:', err.message);
       return res.status(500).json({ error: 'Error al actualizar' });
     }
     
-    if (results.affectedRows === 0) {
+    if (this.changes === 0) {
       return res.status(404).json({ error: 'Paquete no encontrado' });
     }
     
-    res.json({ mensaje: 'Ubicacion actualizada correctamente' });
-  });
-});
-
-app.delete('/paquete/:codigo', (req, res) => {
-  const { codigo } = req.params;
-  
-  const sql = 'DELETE FROM paquetes WHERE codigo = ?';
-  
-  conexion.query(sql, [codigo], (err, results) => {
-    if (err) {
-      console.error('Error eliminando:', err.message);
-      return res.status(500).json({ error: 'Error al eliminar' });
-    }
-    
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ error: 'Paquete no encontrado' });
-    }
-    
-    res.json({ mensaje: 'Paquete eliminado correctamente' });
+    res.json({ mensaje: 'Ubicación actualizada correctamente' });
   });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    database: 'SQLite', 
+    timestamp: new Date().toISOString() 
+  });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -209,27 +182,10 @@ inicializarBaseDatos();
 
 app.listen(PORT, () => {
   console.log('='.repeat(50));
-  console.log('FASTTRACK PRO - SERVIDOR DE PRODUCCION');
+  console.log('FASTTRACK PRO - SQLite + Render.com');
   console.log('='.repeat(50));
   console.log(`URL: http://localhost:${PORT}`);
+  console.log(`Base de datos: ${dbPath}`);
   console.log(`Iniciado: ${new Date().toLocaleString()}`);
-  console.log('Entorno: ' + (process.env.NODE_ENV || 'development'));
   console.log('='.repeat(50));
-});
-
-process.on('SIGTERM', () => {
-  console.log('Recibió SIGTERM, cerrando servidor gracefully...');
-  if (conexion) {
-    conexion.end();
-    console.log('Conexión a BD cerrada');
-  }
-  process.exit(0);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('Error no capturado:', error);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Promise rechazada no manejada:', reason);
 });
