@@ -5,44 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrativo - FastTrack PRO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <script>
         const rol = localStorage.getItem('rol');
-        const ultimoAcceso = localStorage.getItem('ultimoAcceso');
-        
         if (rol !== 'admin') {
             window.location.href = 'index.html';
-        }
-        
-        if (ultimoAcceso) {
-            const tiempoSesion = Date.now() - new Date(ultimoAcceso).getTime();
-            if (tiempoSesion > 8 * 60 * 60 * 1000) {
-                localStorage.removeItem('rol');
-                localStorage.removeItem('ultimoAcceso');
-                window.location.href = 'index.html';
-            }
         }
     </script>
 
     <div class="app-container">
-        <header class="hero-header" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+        <header class="hero-header">
             <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-crown"></i>
-                    <h1>Panel <span>Administrativo</span></h1>
-                </div>
-                <p class="tagline">Gestión completa del sistema logístico</p>
+                <h1>Panel Administrativo</h1>
+                <p>Gestión de paquetes del sistema</p>
                 
                 <div class="admin-controls">
-                    <button onclick="actualizarDashboard()" class="btn btn-secondary">
-                        <i class="fas fa-sync-alt"></i> Actualizar Dashboard
-                    </button>
-                    <button onclick="exportarDatos()" class="btn btn-success">
-                        <i class="fas fa-file-export"></i> Exportar Reporte
+                    <button onclick="actualizarDatos()" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Actualizar
                     </button>
                     <button onclick="cerrarSesion()" class="btn btn-danger">
                         <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
@@ -52,98 +34,35 @@
         </header>
 
         <main class="main-content">
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-icon total-paquetes">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <div class="kpi-info">
-                        <h3>Total Paquetes</h3>
-                        <span id="kpiTotal">0</span>
-                        <small>Sistema completo</small>
-                    </div>
-                </div>
-                
-                <div class="kpi-card">
-                    <div class="kpi-icon en-transito">
-                        <i class="fas fa-truck-moving"></i>
-                    </div>
-                    <div class="kpi-info">
-                        <h3>En Tránsito</h3>
-                        <span id="kpiTransito">0</span>
-                        <small>Activos ahora</small>
-                    </div>
-                </div>
-                
-                <div class="kpi-card">
-                    <div class="kpi-icon entregados">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="kpi-info">
-                        <h3>Entregados</h3>
-                        <span id="kpiEntregados">0</span>
-                        <small>Este mes</small>
-                    </div>
-                </div>
-                
-                <div class="kpi-card">
-                    <div class="kpi-icon eficiencia">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="kpi-info">
-                        <h3>Eficiencia</h3>
-                        <span id="kpiEficiencia">0%</span>
-                        <small>Tasa de éxito</small>
-                    </div>
-                </div>
-            </div>
-
             <div class="control-panel">
+                <!-- FORMULARIO AGREGAR PAQUETE -->
                 <div class="card">
-                    <h2><i class="fas fa-plus-circle"></i> Agregar Nuevo Paquete</h2>
+                    <h2>Agregar Nuevo Paquete</h2>
                     
                     <form id="formAgregarPaquete" onsubmit="return agregarPaquete(event)">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Código del Paquete *</label>
-                                <input type="text" id="nuevoCodigo" class="form-input" 
-                                       placeholder="Ej: DOC2024, ELEC789..." required
-                                       pattern="[A-Z0-9]{3,20}" 
-                                       title="Solo mayúsculas y números (3-20 caracteres)">
-                                <small class="form-hint">Identificador único del paquete</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Latitud *</label>
-                                <input type="number" id="nuevaLat" class="form-input" 
-                                       step="any" placeholder="14.6349" required
-                                       min="-90" max="90">
-                                <small class="form-hint">Entre -90 y 90</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Longitud *</label>
-                                <input type="number" id="nuevaLng" class="form-input" 
-                                       step="any" placeholder="-90.5069" required
-                                       min="-180" max="180">
-                                <small class="form-hint">Entre -180 y 180</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Estado Inicial</label>
-                                <select id="nuevoEstado" class="form-select">
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="en_transito">En Tránsito</option>
-                                    <option value="entregado">Entregado</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Código del Paquete *</label>
+                            <input type="text" id="nuevoCodigo" class="form-input" 
+                                   placeholder="Ej: PKG001" required>
                         </div>
                         
                         <div class="form-group">
-                            <label class="form-label">Descripción del Paquete</label>
+                            <label class="form-label">Latitud *</label>
+                            <input type="number" id="nuevaLat" class="form-input" 
+                                   step="any" placeholder="14.6349" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Longitud *</label>
+                            <input type="number" id="nuevaLng" class="form-input" 
+                                   step="any" placeholder="-90.5069" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Descripción</label>
                             <textarea id="nuevaDescripcion" class="form-textarea" 
-                                      placeholder="Descripción detallada del contenido..."
-                                      rows="3"></textarea>
+                                      placeholder="Descripción del paquete..."
+                                      rows="2"></textarea>
                         </div>
 
                         <div class="form-actions">
@@ -151,29 +70,21 @@
                                 <i class="fas fa-save"></i> Guardar Paquete
                             </button>
                             <button type="button" onclick="limpiarFormulario()" class="btn btn-secondary">
-                                <i class="fas fa-broom"></i> Limpiar
-                            </button>
-                            <button type="button" onclick="generarDatosPrueba()" class="btn btn-success">
-                                <i class="fas fa-magic"></i> Datos de Prueba
+                                Limpiar
                             </button>
                         </div>
                     </form>
                     
-                    <div id="resultadoAgregar" class="resultado-container"></div>
+                    <div id="resultadoAgregar"></div>
                 </div>
 
+                <!-- LISTA DE PAQUETES -->
                 <div class="card">
-                    <h2><i class="fas fa-list"></i> Paquetes Activos</h2>
+                    <h2>Paquetes en el Sistema</h2>
                     
                     <div class="table-controls">
-                        <div class="search-box">
-                            <input type="text" id="buscarPaquetes" class="form-input" 
-                                   placeholder="Buscar paquetes..." onkeyup="filtrarPaquetes()">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <button onclick="cargarPaquetes()" class="btn btn-secondary">
-                            <i class="fas fa-sync"></i>
-                        </button>
+                        <input type="text" id="buscarPaquetes" class="form-input" 
+                               placeholder="Buscar paquetes..." onkeyup="filtrarPaquetes()">
                     </div>
                     
                     <div class="table-container">
@@ -183,68 +94,24 @@
                                     <th>Código</th>
                                     <th>Estado</th>
                                     <th>Ubicación</th>
-                                    <th>Última Actualización</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaPaquetes">
                                 <tr>
-                                    <td colspan="5" class="text-center">
-                                        <div class="loading-container">
-                                            <div class="loading-spinner"></div>
-                                            <p>Cargando paquetes...</p>
-                                        </div>
+                                    <td colspan="4" class="text-center">
+                                        Cargando paquetes...
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    
-                    <div class="table-footer">
-                        <span id="contadorPaquetes">0 paquetes encontrados</span>
-                        <div class="pagination">
-                            <button onclick="cambiarPagina(-1)" class="btn btn-secondary" disabled id="btnAnterior">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <span id="infoPagina">Página 1</span>
-                            <button onclick="cambiarPagina(1)" class="btn btn-secondary" disabled id="btnSiguiente">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <div class="charts-grid">
-                <div class="card">
-                    <h2><i class="fas fa-chart-pie"></i> Distribución por Estado</h2>
-                    <div class="chart-container">
-                        <canvas id="chartEstados"></canvas>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h2><i class="fas fa-chart-bar"></i> Actividad por Día</h2>
-                    <div class="chart-container">
-                        <canvas id="chartActividad"></canvas>
-                    </div>
-                </div>
-            </div>
-
+            <!-- MAPA SIMPLE -->
             <div class="card">
-                <h2><i class="fas fa-map-marked-alt"></i> Mapa de Todos los Paquetes</h2>
-                
-                <div class="map-controls">
-                    <button onclick="centrarMapaAdmin()" class="btn btn-primary">
-                        <i class="fas fa-crosshairs"></i> Centrar Mapa
-                    </button>
-                    <button onclick="simularMovimientos()" class="btn btn-success">
-                        <i class="fas fa-play"></i> Simular Movimientos
-                    </button>
-                    <button onclick="exportarMapa()" class="btn btn-secondary">
-                        <i class="fas fa-download"></i> Exportar Mapa
-                    </button>
-                </div>
+                <h2>Mapa de Paquetes</h2>
                 
                 <div class="map-container">
                     <div id="adminMap"></div>
@@ -253,10 +120,11 @@
         </main>
     </div>
 
+    <!-- MODAL SIMPLE -->
     <div id="modalEditar" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-edit"></i> Editar Paquete</h3>
+                <h3>Editar Paquete</h3>
                 <button onclick="cerrarModal()" class="btn-close">
                     <i class="fas fa-times"></i>
                 </button>
@@ -265,86 +133,47 @@
                 <form id="formEditarPaquete">
                     <input type="hidden" id="editarId">
                     
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Código</label>
-                            <input type="text" id="editarCodigo" class="form-input" readonly>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Latitud *</label>
-                            <input type="number" id="editarLat" class="form-input" step="any" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Longitud *</label>
-                            <input type="number" id="editarLng" class="form-input" step="any" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Estado</label>
-                            <select id="editarEstado" class="form-select">
-                                <option value="pendiente">Pendiente</option>
-                                <option value="en_transito">En Tránsito</option>
-                                <option value="entregado">Entregado</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Código</label>
+                        <input type="text" id="editarCodigo" class="form-input" readonly>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Descripción</label>
-                        <textarea id="editarDescripcion" class="form-textarea" rows="3"></textarea>
+                        <label class="form-label">Latitud *</label>
+                        <input type="number" id="editarLat" class="form-input" step="any" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Longitud *</label>
+                        <input type="number" id="editarLng" class="form-input" step="any" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Estado</label>
+                        <select id="editarEstado" class="form-select">
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_transito">En Tránsito</option>
+                            <option value="entregado">Entregado</option>
+                        </select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button onclick="cerrarModal()" class="btn btn-secondary">Cancelar</button>
-                <button onclick="guardarEdicion()" class="btn btn-primary">Guardar Cambios</button>
-                <button onclick="eliminarPaquete()" class="btn btn-danger">Eliminar Paquete</button>
+                <button onclick="guardarEdicion()" class="btn btn-primary">Guardar</button>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let mapaAdmin = null;
-        let marcadoresAdmin = {};
         let todosLosPaquetes = [];
         let paquetesFiltrados = [];
-        let paginaActual = 1;
-        const paquetesPorPagina = 10;
-        let chartEstados, chartActividad;
 
-        async function inicializarDashboard() {
-            await cargarEstadisticas();
-            await cargarPaquetes();
-            inicializarMapaAdmin();
-            inicializarGraficos();
-            
-            setInterval(() => {
-                cargarEstadisticas();
-                cargarPaquetes();
-            }, 30000);
-        }
-
-        async function cargarEstadisticas() {
-            try {
-                const response = await fetch('/estadisticas');
-                const stats = await response.json();
-                
-                document.getElementById('kpiTotal').textContent = stats.total || 0;
-                document.getElementById('kpiTransito').textContent = stats.en_transito || 0;
-                document.getElementById('kpiEntregados').textContent = stats.entregados || 0;
-                
-                const total = stats.total || 1;
-                const entregados = stats.entregados || 0;
-                const eficiencia = Math.round((entregados / total) * 100);
-                document.getElementById('kpiEficiencia').textContent = `${eficiencia}%`;
-                
-            } catch (error) {
-                console.error('Error cargando estadísticas:', error);
-            }
+        function actualizarDatos() {
+            cargarPaquetes();
+            mostrarNotificacion('Datos actualizados');
         }
 
         async function cargarPaquetes() {
@@ -352,114 +181,44 @@
                 const response = await fetch('/paquetes');
                 todosLosPaquetes = await response.json();
                 paquetesFiltrados = [...todosLosPaquetes];
-                
                 actualizarTablaPaquetes();
                 actualizarMapaAdmin();
-                actualizarGraficos();
-                
             } catch (error) {
-                console.error('Error cargando paquetes:', error);
-                document.getElementById('tablaPaquetes').innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center error">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            Error cargando paquetes
-                        </td>
-                    </tr>
-                `;
+                console.error('Error:', error);
             }
         }
 
         function actualizarTablaPaquetes() {
             const tbody = document.getElementById('tablaPaquetes');
-            const inicio = (paginaActual - 1) * paquetesPorPagina;
-            const fin = inicio + paquetesPorPagina;
-            const paquetesPagina = paquetesFiltrados.slice(inicio, fin);
             
-            if (paquetesPagina.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            <i class="fas fa-inbox"></i>
-                            No se encontraron paquetes
-                        </td>
-                    </tr>
-                `;
+            if (paquetesFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No se encontraron paquetes</td></tr>';
             } else {
-                tbody.innerHTML = paquetesPagina.map(paquete => `
+                tbody.innerHTML = paquetesFiltrados.map(paquete => `
                     <tr>
-                        <td>
-                            <strong class="codigo-tabla">${paquete.codigo}</strong>
-                            ${paquete.descripcion ? `<br><small>${paquete.descripcion}</small>` : ''}
-                        </td>
+                        <td><strong>${paquete.codigo}</strong></td>
                         <td>
                             <span class="status-badge status-${paquete.estado}">
-                                ${obtenerIconoEstado(paquete.estado)} ${paquete.estado}
+                                ${paquete.estado}
                             </span>
                         </td>
+                        <td>${paquete.lat.toFixed(4)}, ${paquete.lng.toFixed(4)}</td>
                         <td>
-                            <small>${paquete.lat.toFixed(4)}, ${paquete.lng.toFixed(4)}</small>
-                        </td>
-                        <td>
-                            <small>${paquete.ultima_actualizacion_local || paquete.timestamp_local}</small>
-                        </td>
-                        <td>
-                            <div class="acciones-tabla">
-                                <button onclick="editarPaquete('${paquete.codigo}')" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="verEnMapa('${paquete.codigo}')" class="btn btn-sm btn-secondary">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                </button>
-                                <button onclick="simularMovimientoIndividual('${paquete.codigo}')" class="btn btn-sm btn-success">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                            </div>
+                            <button onclick="editarPaquete('${paquete.codigo}')" class="btn btn-primary btn-sm">
+                                Editar
+                            </button>
                         </td>
                     </tr>
                 `).join('');
             }
-            
-            actualizarControlesPaginacion();
-        }
-
-        function obtenerIconoEstado(estado) {
-            const iconos = {
-                'pendiente': '🟡',
-                'en_transito': '🟢', 
-                'entregado': '🔵'
-            };
-            return iconos[estado] || '⚫';
         }
 
         function filtrarPaquetes() {
             const busqueda = document.getElementById('buscarPaquetes').value.toLowerCase();
             paquetesFiltrados = todosLosPaquetes.filter(paquete => 
                 paquete.codigo.toLowerCase().includes(busqueda) ||
-                (paquete.descripcion && paquete.descripcion.toLowerCase().includes(busqueda)) ||
-                paquete.estado.toLowerCase().includes(busqueda)
+                (paquete.descripcion && paquete.descripcion.toLowerCase().includes(busqueda))
             );
-            
-            paginaActual = 1;
-            actualizarTablaPaquetes();
-        }
-
-        function actualizarControlesPaginacion() {
-            const totalPaginas = Math.ceil(paquetesFiltrados.length / paquetesPorPagina);
-            document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas}`;
-            document.getElementById('contadorPaquetes').textContent = `${paquetesFiltrados.length} paquetes encontrados`;
-            
-            document.getElementById('btnAnterior').disabled = paginaActual <= 1;
-            document.getElementById('btnSiguiente').disabled = paginaActual >= totalPaginas;
-        }
-
-        function cambiarPagina(direccion) {
-            const totalPaginas = Math.ceil(paquetesFiltrados.length / paquetesPorPagina);
-            paginaActual += direccion;
-            
-            if (paginaActual < 1) paginaActual = 1;
-            if (paginaActual > totalPaginas) paginaActual = totalPaginas;
-            
             actualizarTablaPaquetes();
         }
 
@@ -469,21 +228,15 @@
             const codigo = document.getElementById('nuevoCodigo').value.trim();
             const lat = document.getElementById('nuevaLat').value;
             const lng = document.getElementById('nuevaLng').value;
-            const estado = document.getElementById('nuevoEstado').value;
             const descripcion = document.getElementById('nuevaDescripcion').value.trim();
             const resultadoDiv = document.getElementById('resultadoAgregar');
 
-            if (!validarCoordenadas(lat, lng)) {
-                mostrarResultado('Las coordenadas no son válidas', 'error', resultadoDiv);
+            if (!codigo || !lat || !lng) {
+                mostrarResultado('Todos los campos son obligatorios', 'error', resultadoDiv);
                 return false;
             }
 
-            if (!/^[A-Z0-9]{3,20}$/.test(codigo)) {
-                mostrarResultado('El código debe contener solo mayúsculas y números (3-20 caracteres)', 'error', resultadoDiv);
-                return false;
-            }
-
-            resultadoDiv.innerHTML = '<div class="loading-container"><div class="loading-spinner"></div><p>Agregando paquete...</p></div>';
+            resultadoDiv.innerHTML = '<div style="color: blue;">Agregando paquete...</div>';
 
             try {
                 const response = await fetch('/paquete', {
@@ -493,7 +246,6 @@
                         codigo: codigo, 
                         lat: parseFloat(lat), 
                         lng: parseFloat(lng),
-                        estado: estado,
                         descripcion: descripcion
                     })
                 });
@@ -501,38 +253,22 @@
                 const data = await response.json();
 
                 if (data.error) {
-                    mostrarResultado(`${data.error}`, 'error', resultadoDiv);
+                    mostrarResultado(data.error, 'error', resultadoDiv);
                 } else {
-                    mostrarResultado(`${data.mensaje}`, 'success', resultadoDiv);
+                    mostrarResultado(data.mensaje, 'success', resultadoDiv);
                     document.getElementById('formAgregarPaquete').reset();
-                    
-                    cargarEstadisticas();
                     cargarPaquetes();
                 }
             } catch (error) {
-                console.error('Error:', error);
-                mostrarResultado('Error de conexión con el servidor', 'error', resultadoDiv);
+                mostrarResultado('Error de conexión', 'error', resultadoDiv);
             }
             
             return false;
         }
 
-        function validarCoordenadas(lat, lng) {
-            const latNum = parseFloat(lat);
-            const lngNum = parseFloat(lng);
-            
-            return !isNaN(latNum) && !isNaN(lngNum) && 
-                   latNum >= -90 && latNum <= 90 && 
-                   lngNum >= -180 && lngNum <= 180;
-        }
-
         function mostrarResultado(mensaje, tipo, contenedor) {
-            contenedor.innerHTML = `
-                <div class="resultado ${tipo}">
-                    <i class="fas fa-${tipo === 'success' ? 'check' : 'exclamation'}-circle"></i>
-                    ${mensaje}
-                </div>
-            `;
+            const color = tipo === 'success' ? 'green' : 'red';
+            contenedor.innerHTML = `<div style="color: ${color}; margin-top: 10px;">${mensaje}</div>`;
         }
 
         function limpiarFormulario() {
@@ -540,209 +276,25 @@
             document.getElementById('resultadoAgregar').innerHTML = '';
         }
 
-        function generarDatosPrueba() {
-            const codigos = ['TEST' + Date.now().toString().slice(-6), 'DEMO' + Math.random().toString(36).substr(2, 6).toUpperCase()];
-            const codigo = codigos[0];
-            
-            document.getElementById('nuevoCodigo').value = codigo;
-            document.getElementById('nuevaLat').value = (14.6349 + (Math.random() - 0.5) * 0.01).toFixed(6);
-            document.getElementById('nuevaLng').value = (-90.5069 + (Math.random() - 0.5) * 0.01).toFixed(6);
-            document.getElementById('nuevaDescripcion').value = 'Paquete de prueba generado automáticamente';
-            
-            mostrarNotificacion('Datos de prueba generados', 'success');
-        }
-
         function inicializarMapaAdmin() {
             mapaAdmin = L.map('adminMap').setView([14.6349, -90.5069], 12);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
-            }).addTo(mapaAdmin);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaAdmin);
         }
 
         function actualizarMapaAdmin() {
-            Object.values(marcadoresAdmin).forEach(marker => mapaAdmin.removeLayer(marker));
-            marcadoresAdmin = {};
+            if (!mapaAdmin) return;
+            
+            mapaAdmin.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    mapaAdmin.removeLayer(layer);
+                }
+            });
 
             todosLosPaquetes.forEach(paquete => {
-                const icono = obtenerIconoLeafletPorEstado(paquete.estado);
-                const marker = L.marker([paquete.lat, paquete.lng], { icon: icono })
+                L.marker([paquete.lat, paquete.lng])
                     .addTo(mapaAdmin)
-                    .bindPopup(`
-                        <div class="popup-content">
-                            <h4>${paquete.codigo}</h4>
-                            <p><strong>Estado:</strong> ${paquete.estado}</p>
-                            <p><strong>Descripción:</strong> ${paquete.descripcion || 'Sin descripción'}</p>
-                            <p><strong>Última actualización:</strong> ${paquete.ultima_actualizacion_local}</p>
-                            <div class="popup-actions">
-                                <button onclick="editarPaquete('${paquete.codigo}')" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit"></i> Editar
-                                </button>
-                            </div>
-                        </div>
-                    `);
-
-                marcadoresAdmin[paquete.codigo] = marker;
+                    .bindPopup(`<strong>${paquete.codigo}</strong><br>${paquete.estado}`);
             });
-
-            if (todosLosPaquetes.length > 0) {
-                const group = new L.featureGroup(Object.values(marcadoresAdmin));
-                mapaAdmin.fitBounds(group.getBounds().pad(0.1));
-            }
-        }
-
-        function obtenerIconoLeafletPorEstado(estado) {
-            const iconUrl = {
-                'pendiente': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-                'en_transito': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                'entregado': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png'
-            }[estado] || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png';
-
-            return L.icon({
-                iconUrl: iconUrl,
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-            });
-        }
-
-        function centrarMapaAdmin() {
-            mapaAdmin.setView([14.6349, -90.5069], 12);
-            mostrarNotificacion('Mapa centrado', 'success');
-        }
-
-        function inicializarGraficos() {
-            const ctxEstados = document.getElementById('chartEstados').getContext('2d');
-            const ctxActividad = document.getElementById('chartActividad').getContext('2d');
-            
-            chartEstados = new Chart(ctxEstados, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pendientes', 'En Tránsito', 'Entregados'],
-                    datasets: [{
-                        data: [0, 0, 0],
-                        backgroundColor: ['#ef4444', '#3b82f6', '#10b981']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-
-            chartActividad = new Chart(ctxActividad, {
-                type: 'bar',
-                data: {
-                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-                    datasets: [{
-                        label: 'Paquetes Activos',
-                        data: [0, 0, 0, 0, 0, 0, 0],
-                        backgroundColor: '#8b5cf6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        function actualizarGraficos() {
-            if (!chartEstados || !chartActividad) return;
-            
-            const pendientes = todosLosPaquetes.filter(p => p.estado === 'pendiente').length;
-            const enTransito = todosLosPaquetes.filter(p => p.estado === 'en_transito').length;
-            const entregados = todosLosPaquetes.filter(p => p.estado === 'entregado').length;
-            
-            chartEstados.data.datasets[0].data = [pendientes, enTransito, entregados];
-            chartEstados.update();
-            
-            const actividadSemanal = Array(7).fill(0).map(() => Math.floor(Math.random() * 10) + 5);
-            chartActividad.data.datasets[0].data = actividadSemanal;
-            chartActividad.update();
-        }
-
-        function actualizarDashboard() {
-            cargarEstadisticas();
-            cargarPaquetes();
-            mostrarNotificacion('Dashboard actualizado', 'success');
-        }
-
-        function exportarDatos() {
-            const dataStr = JSON.stringify(todosLosPaquetes, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `fasttrack-paquetes-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            URL.revokeObjectURL(url);
-            mostrarNotificacion('Datos exportados exitosamente', 'success');
-        }
-
-        function simularMovimientos() {
-            const paquetesEnTransito = todosLosPaquetes.filter(p => p.estado === 'en_transito');
-            
-            paquetesEnTransito.forEach((paquete, index) => {
-                setTimeout(() => {
-                    const newLat = paquete.lat + (Math.random() - 0.5) * 0.01;
-                    const newLng = paquete.lng + (Math.random() - 0.5) * 0.01;
-                    
-                    fetch(`/paquete/${paquete.codigo}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            lat: newLat, 
-                            lng: newLng, 
-                            estado: 'en_transito' 
-                        })
-                    }).then(() => {
-                        cargarPaquetes();
-                    });
-                }, index * 500);
-            });
-            
-            mostrarNotificacion(`Simulando ${paquetesEnTransito.length} movimientos`, 'success');
-        }
-
-        function simularMovimientoIndividual(codigo) {
-            const paquete = todosLosPaquetes.find(p => p.codigo === codigo);
-            if (paquete) {
-                const newLat = paquete.lat + (Math.random() - 0.5) * 0.005;
-                const newLng = paquete.lng + (Math.random() - 0.5) * 0.005;
-                
-                fetch(`/paquete/${codigo}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        lat: newLat, 
-                        lng: newLng, 
-                        estado: 'en_transito' 
-                    })
-                }).then(() => {
-                    cargarPaquetes();
-                    mostrarNotificacion(`${codigo} movido simulado`, 'success');
-                });
-            }
-        }
-
-        function verEnMapa(codigo) {
-            const marker = marcadoresAdmin[codigo];
-            if (marker) {
-                mapaAdmin.setView(marker.getLatLng(), 15);
-                marker.openPopup();
-            }
         }
 
         async function editarPaquete(codigo) {
@@ -750,16 +302,13 @@
                 const response = await fetch(`/paquete/${codigo}`);
                 const paquete = await response.json();
                 
-                document.getElementById('editarId').value = paquete.id;
                 document.getElementById('editarCodigo').value = paquete.codigo;
                 document.getElementById('editarLat').value = paquete.lat;
                 document.getElementById('editarLng').value = paquete.lng;
                 document.getElementById('editarEstado').value = paquete.estado;
-                document.getElementById('editarDescripcion').value = paquete.descripcion || '';
                 
                 document.getElementById('modalEditar').style.display = 'block';
             } catch (error) {
-                console.error('Error cargando paquete:', error);
                 mostrarNotificacion('Error cargando paquete', 'error');
             }
         }
@@ -773,12 +322,6 @@
             const lat = document.getElementById('editarLat').value;
             const lng = document.getElementById('editarLng').value;
             const estado = document.getElementById('editarEstado').value;
-            const descripcion = document.getElementById('editarDescripcion').value;
-
-            if (!validarCoordenadas(lat, lng)) {
-                mostrarNotificacion('Las coordenadas no son válidas', 'error');
-                return;
-            }
 
             try {
                 const response = await fetch(`/paquete/${codigo}`, {
@@ -794,72 +337,48 @@
                 const data = await response.json();
 
                 if (data.error) {
-                    mostrarNotificacion(`${data.error}`, 'error');
+                    mostrarNotificacion(data.error, 'error');
                 } else {
-                    mostrarNotificacion(`${data.mensaje}`, 'success');
+                    mostrarNotificacion(data.mensaje, 'success');
                     cerrarModal();
                     cargarPaquetes();
                 }
             } catch (error) {
-                console.error('Error:', error);
                 mostrarNotificacion('Error de conexión', 'error');
             }
         }
 
-        async function eliminarPaquete() {
-            const codigo = document.getElementById('editarCodigo').value;
-            
-            if (!confirm(`¿Estás seguro de que quieres eliminar el paquete ${codigo}? Esta acción no se puede deshacer.`)) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/paquete/${codigo}`, {
-                    method: 'DELETE'
-                });
-
-                const data = await response.json();
-
-                if (data.error) {
-                    mostrarNotificacion(`${data.error}`, 'error');
-                } else {
-                    mostrarNotificacion(`Paquete ${codigo} eliminado`, 'success');
-                    cerrarModal();
-                    cargarPaquetes();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarNotificacion('Error eliminando paquete', 'error');
-            }
-        }
-
-        function exportarMapa() {
-            mostrarNotificacion('Funcionalidad de exportación de mapa en desarrollo', 'info');
-        }
-
         function cerrarSesion() {
             localStorage.removeItem('rol');
-            localStorage.removeItem('ultimoAcceso');
             window.location.href = 'index.html';
         }
 
         function mostrarNotificacion(mensaje, tipo = 'info') {
             const notification = document.createElement('div');
-            notification.className = `notification ${tipo}`;
-            notification.innerHTML = `
-                <i class="fas fa-${tipo === 'success' ? 'check' : tipo === 'error' ? 'exclamation-triangle' : 'info'}-circle"></i>
-                ${mensaje}
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                border-left: 4px solid ${tipo === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
             `;
+            notification.innerHTML = mensaje;
             
             document.body.appendChild(notification);
             
             setTimeout(() => {
                 notification.remove();
-            }, 4000);
+            }, 3000);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            inicializarDashboard();
+            inicializarMapaAdmin();
+            cargarPaquetes();
         });
 
         window.onclick = function(event) {
@@ -876,188 +395,32 @@
             gap: 1rem;
             justify-content: center;
             margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-            padding: 0 1rem;
-        }
-
-        .kpi-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            transition: transform 0.3s ease;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .kpi-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-        }
-
-        .kpi-icon.total-paquetes { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
-        .kpi-icon.en-transito { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
-        .kpi-icon.entregados { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-        .kpi-icon.eficiencia { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-
-        .kpi-info h3 {
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-            font-size: 1rem;
-        }
-
-        .kpi-info span {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--dark);
-            display: block;
-            line-height: 1;
-        }
-
-        .kpi-info small {
-            color: var(--gray);
-            font-size: 0.9rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .form-hint {
-            display: block;
-            margin-top: 0.3rem;
-            font-size: 0.8rem;
-            color: var(--gray);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-start;
-            flex-wrap: wrap;
         }
 
         .table-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 1rem;
-            gap: 1rem;
-        }
-
-        .search-box {
-            position: relative;
-            flex: 1;
-        }
-
-        .search-box i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray);
-        }
-
-        .table-container {
-            overflow-x: auto;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
         }
 
         .data-table th {
             background: #f8fafc;
-            padding: 1rem;
+            padding: 12px;
             text-align: left;
-            font-weight: 600;
-            color: var(--dark);
             border-bottom: 2px solid #e5e7eb;
         }
 
         .data-table td {
-            padding: 1rem;
+            padding: 12px;
             border-bottom: 1px solid #f3f4f6;
         }
 
-        .data-table tr:hover {
-            background: #f9fafb;
-        }
-
-        .codigo-tabla {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            color: var(--primary);
-        }
-
-        .acciones-tabla {
-            display: flex;
-            gap: 0.3rem;
-        }
-
         .btn-sm {
-            padding: 0.5rem 0.8rem;
-            font-size: 0.8rem;
-        }
-
-        .table-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            padding: 1rem 0;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .pagination {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin: 2rem 0;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
-
-        .map-controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
+            padding: 6px 12px;
+            font-size: 0.9rem;
         }
 
         .modal {
@@ -1069,71 +432,47 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
         }
 
         .modal-content {
             background-color: white;
-            margin: 5% auto;
+            margin: 10% auto;
             padding: 0;
-            border-radius: 16px;
+            border-radius: 8px;
             width: 90%;
-            max-width: 600px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: modalSlideIn 0.3s ease;
-        }
-
-        @keyframes modalSlideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            max-width: 500px;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.5rem 2rem;
+            padding: 1rem 1.5rem;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .modal-header h3 {
-            margin: 0;
-            color: var(--dark);
-        }
-
-        .btn-close {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--gray);
-            padding: 0.5rem;
-            border-radius: 6px;
-            transition: background-color 0.2s;
-        }
-
-        .btn-close:hover {
-            background: #f3f4f6;
-        }
-
         .modal-body {
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
         .modal-footer {
             display: flex;
             justify-content: flex-end;
             gap: 1rem;
-            padding: 1.5rem 2rem;
+            padding: 1rem 1.5rem;
             border-top: 1px solid #e5e7eb;
-            background: #f8fafc;
-            border-radius: 0 0 16px 16px;
         }
 
-        .popup-actions {
-            margin-top: 1rem;
-            display: flex;
-            gap: 0.5rem;
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         @media (max-width: 768px) {
@@ -1141,36 +480,9 @@
                 flex-direction: column;
             }
             
-            .kpi-card {
-                flex-direction: column;
-                text-align: center;
-                padding: 1.5rem;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-            
-            .table-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            
             .modal-content {
-                margin: 10% auto;
+                margin: 20% auto;
                 width: 95%;
-            }
-            
-            .modal-footer {
-                flex-direction: column;
             }
         }
     </style>
